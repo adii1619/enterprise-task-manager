@@ -4,6 +4,11 @@ import { useState } from 'react';
 import { Column, Priority } from '@/types';
 import { useBoardStore } from '@/lib/store';
 import TaskCard from './TaskCard';
+import { useDroppable } from '@dnd-kit/core';
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
 
 interface KanbanColumnProps {
   column: Column;
@@ -18,6 +23,11 @@ export default function KanbanColumn({ column }: KanbanColumnProps) {
   const [newTitle, setNewTitle] = useState('');
   const [priority, setPriority] = useState<Priority>('MEDIUM');
 
+  // Make the column container droppable
+  const { setNodeRef } = useDroppable({
+    id: column.id,
+  });
+
   const handleAddTask = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim()) return;
@@ -27,29 +37,44 @@ export default function KanbanColumn({ column }: KanbanColumnProps) {
     setIsAdding(false);
   };
 
+  const taskIds = tasks.map((task) => task.id);
+
   return (
-    <div className="flex h-full w-80 flex-col rounded-xl bg-slate-100 p-4">
+    <div
+      ref={setNodeRef}
+      className="flex h-full w-80 flex-col rounded-xl bg-slate-100 p-4"
+    >
       {/* Column Header */}
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <h3 className="text-sm font-semibold text-slate-800">{column.title}</h3>
+          <h3 className="text-sm font-semibold text-slate-800">
+            {column.title}
+          </h3>
           <span className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-200 text-xs font-medium text-slate-600">
             {tasks.length}
           </span>
         </div>
       </div>
 
-      {/* Task List */}
-      <div className="flex flex-1 flex-col gap-3 overflow-y-auto">
-        {tasks.map((task) => (
-          <TaskCard key={task.id} task={task} />
-        ))}
-      </div>
+      {/* Droppable Task List */}
+      <SortableContext
+        items={taskIds}
+        strategy={verticalListSortingStrategy}
+      >
+        <div className="flex flex-1 flex-col gap-3 overflow-y-auto">
+          {tasks.map((task) => (
+            <TaskCard key={task.id} task={task} />
+          ))}
+        </div>
+      </SortableContext>
 
       {/* Add Task Control */}
       <div className="mt-3">
         {isAdding ? (
-          <form onSubmit={handleAddTask} className="rounded-lg bg-white p-3 shadow-sm">
+          <form
+            onSubmit={handleAddTask}
+            className="rounded-lg bg-white p-3 shadow-sm"
+          >
             <input
               type="text"
               placeholder="Task title..."
