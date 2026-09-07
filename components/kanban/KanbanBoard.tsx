@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useBoardStore } from '@/lib/store';
 import KanbanColumn from './KanbanColumn';
 import TaskCard from './TaskCard';
@@ -21,12 +21,21 @@ export default function KanbanBoard() {
   const addColumn = useBoardStore((state) => state.addColumn);
   const updateTaskColumn = useBoardStore((state) => state.updateTaskColumn);
 
+  // 1. Get fetchBoardData from store
+  const fetchBoardData = useBoardStore((state) => state.fetchBoardData);
+
+  // 2. Fetch live MongoDB data on page load
+  useEffect(() => {
+    fetchBoardData();
+  }, [fetchBoardData]);
+
+
   const [isAddingColumn, setIsAddingColumn] = useState(false);
   const [columnTitle, setColumnTitle] = useState('');
   
   // Track which task is actively being dragged
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
-  const activeTask = tasks.find((t) => t.id === activeTaskId);
+  const activeTask = tasks.find((t) => t._id === activeTaskId);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -53,11 +62,11 @@ export default function KanbanBoard() {
 
     let targetColumnId: string | undefined;
 
-    const isOverAColumn = columns.some((col) => col.id === overId);
+    const isOverAColumn = columns.some((col) => col._id === overId);
     if (isOverAColumn) {
       targetColumnId = overId;
     } else {
-      const overTask = tasks.find((t) => t.id === overId);
+      const overTask = tasks.find((t) => t._id === overId);
       if (overTask) {
         targetColumnId = overTask.columnId;
       }
@@ -87,7 +96,7 @@ export default function KanbanBoard() {
       <div className="flex h-full w-full items-start gap-4 overflow-x-auto p-6">
         {/* Render columns */}
         {columns.map((column) => (
-          <KanbanColumn key={column.id} column={column} />
+          <KanbanColumn key={column._id} column={column} />
         ))}
 
         {/* Add column form */}

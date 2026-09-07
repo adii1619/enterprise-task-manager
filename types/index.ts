@@ -10,7 +10,7 @@ export interface User {
 }
 
 export interface Task {
-  id: string;
+  _id: string; // Updated from id to match MongoDB
   columnId: string;
   title: string;
   description?: string;
@@ -21,8 +21,8 @@ export interface Task {
 }
 
 export interface Column {
-  id: string;
-  boardId: string;
+  _id: string; // Updated from id to match MongoDB
+  boardId?: string; // Optional for now since we bypass board requirement
   title: string;
   order: number;
 }

@@ -2,6 +2,8 @@ import express, { Express, Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { connectDB } from './config/db.js';
+import taskRoutes from './routes/taskRoutes.js';
+import columnRoutes from "./routes/columnRoutes.js"
 
 dotenv.config();
 
@@ -14,6 +16,10 @@ connectDB();
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Routes
+app.use('/api/tasks', taskRoutes);
+app.use('/api/columns', columnRoutes)
 
 // Health Check Route
 app.get('/health', (req: Request, res: Response) => {

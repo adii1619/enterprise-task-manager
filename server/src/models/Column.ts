@@ -4,11 +4,13 @@ export interface IColumn extends Document {
   boardId: Types.ObjectId;
   title: string;
   order: number;
+  createdAt: Date;
+  updatedAt:Date;
 }
 
 const columnSchema = new Schema<IColumn>(
   {
-    boardId: { type: Schema.Types.ObjectId, ref: 'Board', required: true },
+    boardId: { type: Schema.Types.ObjectId, ref: 'Board', required: false },
     title: { type: String, required: true, trim: true },
     order: { type: Number, required: true, default: 0 },
   },
