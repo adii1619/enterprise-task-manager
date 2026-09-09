@@ -12,12 +12,14 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
-  closestCorners,
+  pointerWithin,
 } from '@dnd-kit/core';
 
 export default function KanbanBoard() {
   const columns = useBoardStore((state) => state.columns);
   const tasks = useBoardStore((state) => state.tasks);
+  const searchQuery = useBoardStore((state) => state.searchQuery);
+  const selectedPriority = useBoardStore((state) => state.selectedPriority);
   const addColumn = useBoardStore((state) => state.addColumn);
   const updateTaskColumn = useBoardStore((state) => state.updateTaskColumn);
 
@@ -36,6 +38,17 @@ export default function KanbanBoard() {
   // Track which task is actively being dragged
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const activeTask = tasks.find((t) => t._id === activeTaskId);
+  const normalizedSearch = searchQuery.trim().toLowerCase();
+  const filteredTasks = tasks.filter((task) => {
+    const matchesSearch =
+      !normalizedSearch ||
+      task.title.toLowerCase().includes(normalizedSearch) ||
+      task.description?.toLowerCase().includes(normalizedSearch);
+    const matchesPriority =
+      selectedPriority === 'ALL' || task.priority === selectedPriority;
+
+    return matchesSearch && matchesPriority;
+  });
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -47,7 +60,7 @@ export default function KanbanBoard() {
 
   // Triggered the moment you start dragging
   const handleDragStart = (event: DragStartEvent) => {
-    setActiveTaskId(event.active.id as string);
+    setActiveTaskId(String(event.active.id));
   };
 
   // Triggered when you release the dragged item
@@ -55,33 +68,34 @@ export default function KanbanBoard() {
     setActiveTaskId(null); // Clear active task state
     const { active, over } = event;
 
-    if (!over) return;
+    console.log('--- Drag End Event ---');
+    console.log('Active ID (Dragged Task):', active.id);
+    console.log('Over ID (Target):', over?.id);
 
-    const activeTaskId = active.id as string;
-    const overId = over.id as string;
-
-    let targetColumnId: string | undefined;
-
-    const isOverAColumn = columns.some((col) => col._id === overId);
-    if (isOverAColumn) {
-      targetColumnId = overId;
-    } else {
-      const overTask = tasks.find((t) => t._id === overId);
-      if (overTask) {
-        targetColumnId = overTask.columnId;
-      }
+    if (!over) {
+      console.log('Dropped outside any target');
+      return;
     }
+
+    const activeTaskId = String(active.id);
+    const overId = String(over.id);
+
+    const targetColumn = columns.find((col) => col._id === overId);
+    const overTask = tasks.find((task) => task._id === overId);
+    const targetColumnId = targetColumn?._id || overTask?.columnId;
+
+    console.log('Resolved Target Column ID:', targetColumnId);
 
     if (targetColumnId) {
       updateTaskColumn(activeTaskId, targetColumnId);
     }
   };
 
-  const handleAddColumn = (e: React.FormEvent) => {
+  const handleAddColumn = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!columnTitle.trim()) return;
 
-    addColumn(columnTitle.trim());
+    await addColumn(columnTitle.trim());
     setColumnTitle('');
     setIsAddingColumn(false);
   };
@@ -89,14 +103,18 @@ export default function KanbanBoard() {
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCorners}
+      collisionDetection={pointerWithin}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
       <div className="flex h-full w-full items-start gap-4 overflow-x-auto p-6">
         {/* Render columns */}
         {columns.map((column) => (
-          <KanbanColumn key={column._id} column={column} />
+          <KanbanColumn
+            key={column._id}
+            column={column}
+            tasks={filteredTasks.filter((task) => task.columnId === column._id)}
+          />
         ))}
 
         {/* Add column form */}
@@ -104,15 +122,15 @@ export default function KanbanBoard() {
           {isAddingColumn ? (
             <form
               onSubmit={handleAddColumn}
-              className="rounded-xl border border-slate-200 bg-slate-100 p-4"
+              className="w-80 shrink-0 rounded-xl border border-slate-200 bg-slate-100 p-4"
             >
               <input
                 type="text"
-                placeholder="Column title..."
+                placeholder="Enter column title..."
                 value={columnTitle}
                 onChange={(e) => setColumnTitle(e.target.value)}
                 autoFocus
-                className="w-full rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500"
+                className="mb-2 w-full rounded border border-slate-300 px-2 py-1 text-sm outline-none focus:border-blue-500"
               />
               <div className="mt-2 flex justify-end gap-2">
                 <button
@@ -126,14 +144,14 @@ export default function KanbanBoard() {
                   type="submit"
                   className="rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700"
                 >
-                  Add Column
+                  Add
                 </button>
               </div>
             </form>
           ) : (
             <button
               onClick={() => setIsAddingColumn(true)}
-              className="flex w-full items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-slate-50/50 p-4 text-sm font-medium text-slate-500 hover:border-slate-400 hover:bg-slate-100"
+              className="h-14 w-80 shrink-0 rounded-xl border-2 border-dashed border-slate-300 text-sm font-medium text-slate-500 transition-colors hover:border-slate-400 hover:bg-slate-50"
             >
               + Add New Column
             </button>

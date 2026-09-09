@@ -6,22 +6,42 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/a
 interface BoardState {
   columns: Column[];
   tasks: Task[];
+  searchQuery: string;
+  selectedPriority: Priority | 'ALL';
+  boardTitle: string;
+
+  setSearchQuery: (query: string) => void;
+  setSelectedPriority: (priority: Priority | 'ALL') => void;
+  setBoardTitle: (title: string) => void;
   
   // Async Data Fetching
   fetchBoardData: () => Promise<void>;
 
   // Task Actions
   addTask: (columnId: string, title: string, priority?: Priority) => Promise<void>;
+  updateTask: (
+    taskId: string,
+    updates: Partial<Pick<Task, 'title' | 'description' | 'priority'>>
+  ) => Promise<void>;
   updateTaskColumn: (taskId: string, newColumnId: string) => Promise<void>;
   deleteTask: (taskId: string) => Promise<void>;
   
   // Column Actions
   addColumn: (title: string) => Promise<void>;
+  updateColumnTitle: (id: string, title: string) => Promise<void>;
+  deleteColumn: (id: string) => Promise<void>;
 }
 
 export const useBoardStore = create<BoardState>((set, get) => ({
   columns: [],
   tasks: [],
+  searchQuery: '',
+  selectedPriority: 'ALL',
+  boardTitle: 'Sprint 14 - Platform Redesign',
+
+  setSearchQuery: (query) => set({ searchQuery: query }),
+  setSelectedPriority: (priority) => set({ selectedPriority: priority }),
+  setBoardTitle: (title) => set({ boardTitle: title }),
 
   // Load live data from MongoDB on app start
   fetchBoardData: async () => {
@@ -46,10 +66,33 @@ export const useBoardStore = create<BoardState>((set, get) => ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ columnId, title, priority }),
       });
+      if (!res.ok) throw new Error(`Failed to add task (${res.status})`);
       const newTask = await res.json();
       set((state) => ({ tasks: [...state.tasks, newTask] }));
     } catch (err) {
       console.error('Failed to add task:', err);
+    }
+  },
+
+  // Update task details via API (Optimistic UI update first)
+  updateTask: async (taskId, updates) => {
+    set((state) => ({
+      tasks: state.tasks.map((task) =>
+        task._id === taskId
+          ? { ...task, ...updates, updatedAt: new Date().toISOString() }
+          : task
+      ),
+    }));
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/tasks/${taskId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      });
+      if (!res.ok) throw new Error(`Failed to update task (${res.status})`);
+    } catch (err) {
+      console.error('Failed to update task:', err);
     }
   },
 
@@ -104,10 +147,46 @@ export const useBoardStore = create<BoardState>((set, get) => ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title, order }),
       });
+      if (!res.ok) throw new Error(`Failed to create column (${res.status})`);
       const newColumn = await res.json();
       set((state) => ({ columns: [...state.columns, newColumn] }));
     } catch (err) {
       console.error('Failed to add column:', err);
+    }
+  },
+
+  // Update column title via API
+  updateColumnTitle: async (id, title) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/columns/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title }),
+      });
+      if (!res.ok) throw new Error(`Failed to update column (${res.status})`);
+      set((state) => ({
+        columns: state.columns.map((column) =>
+          column._id === id ? { ...column, title } : column
+        ),
+      }));
+    } catch (err) {
+      console.error('Failed to update column:', err);
+    }
+  },
+
+  // Delete an empty column via API
+  deleteColumn: async (id) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/columns/${id}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) throw new Error(`Failed to delete column (${res.status})`);
+      set((state) => ({
+        columns: state.columns.filter((column) => column._id !== id),
+        tasks: state.tasks.filter((task) => task.columnId !== id),
+      }));
+    } catch (err) {
+      console.error('Failed to delete column:', err);
     }
   },
 }));
