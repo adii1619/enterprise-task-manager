@@ -1,5 +1,6 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 const AUTH_STORAGE_KEY = 'enterprise-task-manager-auth';
+const WORKSPACE_STORAGE_KEY = 'enterprise-task-manager-workspace';
 
 export class ApiError extends Error {
   status: number;
@@ -28,6 +29,8 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
   const headers = new Headers(init.headers);
   headers.set('Content-Type', 'application/json');
   if (token) headers.set('Authorization', `Bearer ${token}`);
+  const workspaceId = getStoredWorkspaceId();
+  if (workspaceId) headers.set('x-workspace-id', workspaceId);
 
   const response = await fetch(`${API_BASE_URL}${path}`, { ...init, headers });
   const body = await response.json().catch(() => null);
@@ -91,4 +94,28 @@ export async function createKanbanTask(taskData: {
   });
   if (!res.ok) throw new Error('Failed to create task');
   return res.json();
+}
+
+function getStoredWorkspaceId(): string | null {
+  if (typeof window === 'undefined') return null;
+
+  try {
+    const stored = window.localStorage.getItem(WORKSPACE_STORAGE_KEY);
+    if (!stored) return null;
+    return (JSON.parse(stored) as { state?: { currentWorkspace?: { _id?: string } } })
+      .state?.currentWorkspace?._id ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export function fetchWorkspaces() {
+  return apiFetch<import('@/types').ClientWorkspace[]>('/workspaces');
+}
+
+export function createWorkspace(name: string) {
+  return apiFetch<import('@/types').ClientWorkspace>('/workspaces', {
+    method: 'POST',
+    body: JSON.stringify({ name }),
+  });
 }

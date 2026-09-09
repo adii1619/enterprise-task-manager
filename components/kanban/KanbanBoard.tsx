@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useBoardStore } from '@/lib/store';
 import { useAuthStore } from '@/lib/auth-store';
+import { useWorkspaceStore } from '@/lib/workspace-store';
 import KanbanColumn from './KanbanColumn';
 import TaskCard from './TaskCard';
 import {
@@ -18,6 +19,7 @@ import {
 
 export default function KanbanBoard() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
   const columns = useBoardStore((state) => state.columns);
   const tasks = useBoardStore((state) => state.tasks);
   const clearBoard = useBoardStore((state) => state.clearBoard);
@@ -31,12 +33,13 @@ export default function KanbanBoard() {
 
   // 2. Fetch live MongoDB data on page load
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && currentWorkspace) {
+      clearBoard();
       void fetchBoardData();
-    } else {
+    } else if (!isAuthenticated) {
       clearBoard();
     }
-  }, [clearBoard, fetchBoardData, isAuthenticated]);
+  }, [clearBoard, currentWorkspace, fetchBoardData, isAuthenticated]);
 
 
   const [isAddingColumn, setIsAddingColumn] = useState(false);
@@ -119,6 +122,14 @@ export default function KanbanBoard() {
             Your tasks and columns are private to your account.
           </p>
         </div>
+      </div>
+    );
+  }
+
+  if (!currentWorkspace) {
+    return (
+      <div className="flex h-full items-center justify-center p-6 text-sm text-slate-500">
+        Loading your workspace...
       </div>
     );
   }

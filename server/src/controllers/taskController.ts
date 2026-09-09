@@ -9,8 +9,12 @@ export const getTasks = async (req: Request, res: Response) => {
       res.status(401).json({ message: 'Not authenticated' });
       return;
     }
+    if (!req.workspace) {
+      res.status(400).json({ message: 'Workspace context is required' });
+      return;
+    }
 
-    const tasks = await TaskModel.find({ userId: req.user._id });
+    const tasks = await TaskModel.find({ workspaceId: req.workspace._id });
     res.status(200).json(tasks);
   } catch (error) {
     res.status(500).json({ message: (error as Error).message });
@@ -24,11 +28,15 @@ export const createTask = async (req: Request, res: Response) => {
       res.status(401).json({ message: 'Not authenticated' });
       return;
     }
+    if (!req.workspace) {
+      res.status(400).json({ message: 'Workspace context is required' });
+      return;
+    }
 
     const { columnId, title, description, priority, assigneeId } = req.body;
     const column = await ColumnModel.findOne({
       _id: columnId,
-      userId: req.user._id,
+      workspaceId: req.workspace._id,
     });
 
     if (!column) {
@@ -37,7 +45,7 @@ export const createTask = async (req: Request, res: Response) => {
     }
 
     const task = await TaskModel.create({
-      userId: req.user._id,
+      workspaceId: req.workspace._id,
       columnId,
       title,
       description,
@@ -57,13 +65,17 @@ export const updateTask = async (req: Request, res: Response) => {
       res.status(401).json({ message: 'Not authenticated' });
       return;
     }
+    if (!req.workspace) {
+      res.status(400).json({ message: 'Workspace context is required' });
+      return;
+    }
 
     const { id } = req.params;
     const { columnId, title, description, priority, assigneeId } = req.body;
     if (columnId) {
       const column = await ColumnModel.findOne({
         _id: columnId,
-        userId: req.user._id,
+        workspaceId: req.workspace._id,
       });
 
       if (!column) {
@@ -73,7 +85,7 @@ export const updateTask = async (req: Request, res: Response) => {
     }
 
     const updatedTask = await TaskModel.findOneAndUpdate(
-      { _id: id, userId: req.user._id },
+      { _id: id, workspaceId: req.workspace._id },
       { columnId, title, description, priority, assigneeId },
       {
       new: true,
@@ -98,11 +110,15 @@ export const deleteTask = async (req: Request, res: Response) => {
       res.status(401).json({ message: 'Not authenticated' });
       return;
     }
+    if (!req.workspace) {
+      res.status(400).json({ message: 'Workspace context is required' });
+      return;
+    }
 
     const { id } = req.params;
     const deletedTask = await TaskModel.findOneAndDelete({
       _id: id,
-      userId: req.user._id,
+      workspaceId: req.workspace._id,
     });
 
     if (!deletedTask) {

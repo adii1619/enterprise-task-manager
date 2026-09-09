@@ -9,7 +9,12 @@ export const getColumns = async (req: Request, res: Response) => {
       return;
     }
 
-    const columns = await ColumnModel.find({ userId: req.user._id }).sort({ order: 1 });
+    if (!req.workspace) {
+      res.status(400).json({ message: 'Workspace context is required' });
+      return;
+    }
+
+    const columns = await ColumnModel.find({ workspaceId: req.workspace._id }).sort({ order: 1 });
     res.status(200).json(columns);
   } catch (error) {
     res.status(500).json({ message: (error as Error).message });
@@ -23,10 +28,14 @@ export const createColumn = async (req: Request, res: Response) => {
       res.status(401).json({ message: 'Not authenticated' });
       return;
     }
+    if (!req.workspace) {
+      res.status(400).json({ message: 'Workspace context is required' });
+      return;
+    }
 
     const { title, order, boardId } = req.body;
     const column = await ColumnModel.create({
-      userId: req.user._id,
+      workspaceId: req.workspace._id,
       title,
       order,
       boardId,
@@ -44,11 +53,15 @@ export const updateColumn = async (req: Request, res: Response) => {
       res.status(401).json({ message: 'Not authenticated' });
       return;
     }
+    if (!req.workspace) {
+      res.status(400).json({ message: 'Workspace context is required' });
+      return;
+    }
 
     const { id } = req.params;
     const { title } = req.body;
     const updatedColumn = await ColumnModel.findOneAndUpdate(
-      { _id: id, userId: req.user._id },
+      { _id: id, workspaceId: req.workspace._id },
       { title },
       { new: true, runValidators: true }
     );
@@ -70,11 +83,15 @@ export const deleteColumn = async (req: Request, res: Response) => {
       res.status(401).json({ message: 'Not authenticated' });
       return;
     }
+    if (!req.workspace) {
+      res.status(400).json({ message: 'Workspace context is required' });
+      return;
+    }
 
     const { id } = req.params;
     const deletedColumn = await ColumnModel.findOneAndDelete({
       _id: id,
-      userId: req.user._id,
+      workspaceId: req.workspace._id,
     });
 
     if (!deletedColumn) {

@@ -48,3 +48,15 @@ export interface Workspace {
   slug: string;
   ownerId: string;
 }
+
+export interface ClientWorkspace {
+  _id: string;
+  name: string;
+  slug: string;
+  ownerId: string;
+  members: Array<{
+    userId: string;
+    role: 'OWNER' | 'ADMIN' | 'MEMBER';
+    joinedAt: string;
+  }>;
+}

@@ -1,7 +1,7 @@
 import { Schema, model, Document, Types } from 'mongoose';
 
 export interface ITask extends Document {
-  userId: Types.ObjectId;
+  workspaceId: Types.ObjectId;
   columnId: Types.ObjectId;
   title: string;
   description?: string;
@@ -13,7 +13,7 @@ export interface ITask extends Document {
 
 const taskSchema = new Schema<ITask>(
   {
-    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    workspaceId: { type: Schema.Types.ObjectId, ref: 'Workspace', required: true },
     columnId: { type: Schema.Types.ObjectId, ref: 'Column', required: true },
     title: { type: String, required: true, trim: true },
     description: { type: String, trim: true },

@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useBoardStore } from '@/lib/store';
+import { useWorkspaceStore } from '@/lib/workspace-store';
 import { Priority } from '@/types';
 import AuthModal from '@/components/auth/AuthModal';
 import UserMenu from '@/components/auth/UserMenu';
-
-const workspaces = ['Engineering Team', 'Product Team', 'Design Team'];
+import { useAuthStore } from '@/lib/auth-store';
 
 export default function Header() {
   const {
@@ -17,15 +17,39 @@ export default function Header() {
     selectedPriority,
     setSelectedPriority,
   } = useBoardStore();
-  const [workspace, setWorkspace] = useState('Engineering Team');
+  const {
+    workspaces,
+    currentWorkspace,
+    isLoading: isWorkspaceLoading,
+    loadWorkspaces,
+    selectWorkspace,
+    createWorkspace,
+    clearWorkspaces,
+  } = useWorkspaceStore();
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [tempTitle, setTempTitle] = useState(boardTitle);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [isCreatingWorkspace, setIsCreatingWorkspace] = useState(false);
+  const [newWorkspaceName, setNewWorkspaceName] = useState('');
+
+  useEffect(() => {
+    if (isAuthenticated) void loadWorkspaces();
+    else clearWorkspaces();
+  }, [clearWorkspaces, isAuthenticated, loadWorkspaces]);
 
   const handleTitleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (tempTitle.trim()) setBoardTitle(tempTitle.trim());
     setIsEditingTitle(false);
+  };
+
+  const handleCreateWorkspace = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!newWorkspaceName.trim()) return;
+    await createWorkspace(newWorkspaceName.trim());
+    setNewWorkspaceName('');
+    setIsCreatingWorkspace(false);
   };
 
   return (
@@ -37,18 +61,44 @@ export default function Header() {
               Workspace
             </span>
             <select
-              value={workspace}
-              onChange={(e) => setWorkspace(e.target.value)}
+              value={currentWorkspace?._id || ''}
+              onChange={(e) => selectWorkspace(e.target.value)}
               aria-label="Select workspace"
               className="bg-transparent text-xs font-medium text-slate-500 outline-none"
             >
-              {workspaces.map((name) => (
-                <option key={name} value={name}>
-                  {name}
+              {isWorkspaceLoading && <option value="">Loading workspaces...</option>}
+              {workspaces.map((workspace) => (
+                <option key={workspace._id} value={workspace._id}>
+                  {workspace.name}
                 </option>
               ))}
             </select>
+            {isAuthenticated && (
+              <button
+                type="button"
+                onClick={() => setIsCreatingWorkspace((value) => !value)}
+                aria-label="Create workspace"
+                className="text-xs font-bold text-blue-600 hover:text-blue-800"
+              >
+                +
+              </button>
+            )}
           </div>
+
+          {isCreatingWorkspace && (
+            <form onSubmit={handleCreateWorkspace} className="mt-2 flex gap-2">
+              <input
+                value={newWorkspaceName}
+                onChange={(e) => setNewWorkspaceName(e.target.value)}
+                placeholder="Workspace name"
+                autoFocus
+                className="w-40 rounded border border-slate-200 px-2 py-1 text-xs outline-none focus:border-blue-500"
+              />
+              <button type="submit" className="rounded bg-blue-600 px-2 py-1 text-xs font-medium text-white">
+                Add
+              </button>
+            </form>
+          )}
 
           {isEditingTitle ? (
             <form onSubmit={handleTitleSubmit} className="mt-1">
