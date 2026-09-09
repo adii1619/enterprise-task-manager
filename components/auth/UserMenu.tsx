@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { useAuthStore } from '@/lib/auth-store';
+import { useBoardStore } from '@/lib/store';
 
 interface UserMenuProps {
   onSignIn: () => void;
@@ -9,6 +10,7 @@ interface UserMenuProps {
 
 export default function UserMenu({ onSignIn }: UserMenuProps) {
   const { user, isAuthenticated, hydrateSession, logout } = useAuthStore();
+  const clearBoard = useBoardStore((state) => state.clearBoard);
 
   useEffect(() => {
     void hydrateSession();
@@ -53,7 +55,10 @@ export default function UserMenu({ onSignIn }: UserMenuProps) {
       </div>
       <button
         type="button"
-        onClick={logout}
+        onClick={() => {
+          logout();
+          clearBoard();
+        }}
         className="text-xs font-medium text-slate-500 hover:text-red-600"
       >
         Log out

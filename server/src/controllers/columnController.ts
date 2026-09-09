@@ -4,7 +4,12 @@ import { ColumnModel } from '../models/Column.js';
 // Get all columns ordered by rank
 export const getColumns = async (req: Request, res: Response) => {
   try {
-    const columns = await ColumnModel.find().sort({ order: 1 });
+    if (!req.user) {
+      res.status(401).json({ message: 'Not authenticated' });
+      return;
+    }
+
+    const columns = await ColumnModel.find({ userId: req.user._id }).sort({ order: 1 });
     res.status(200).json(columns);
   } catch (error) {
     res.status(500).json({ message: (error as Error).message });
@@ -14,7 +19,18 @@ export const getColumns = async (req: Request, res: Response) => {
 // Create a new column
 export const createColumn = async (req: Request, res: Response) => {
   try {
-    const column = await ColumnModel.create(req.body);
+    if (!req.user) {
+      res.status(401).json({ message: 'Not authenticated' });
+      return;
+    }
+
+    const { title, order, boardId } = req.body;
+    const column = await ColumnModel.create({
+      userId: req.user._id,
+      title,
+      order,
+      boardId,
+    });
     res.status(201).json(column);
   } catch (error) {
     res.status(400).json({ message: (error as Error).message });
@@ -24,10 +40,15 @@ export const createColumn = async (req: Request, res: Response) => {
 // Update a column title
 export const updateColumn = async (req: Request, res: Response) => {
   try {
+    if (!req.user) {
+      res.status(401).json({ message: 'Not authenticated' });
+      return;
+    }
+
     const { id } = req.params;
     const { title } = req.body;
-    const updatedColumn = await ColumnModel.findByIdAndUpdate(
-      id,
+    const updatedColumn = await ColumnModel.findOneAndUpdate(
+      { _id: id, userId: req.user._id },
       { title },
       { new: true, runValidators: true }
     );
@@ -45,8 +66,16 @@ export const updateColumn = async (req: Request, res: Response) => {
 // Delete a column
 export const deleteColumn = async (req: Request, res: Response) => {
   try {
+    if (!req.user) {
+      res.status(401).json({ message: 'Not authenticated' });
+      return;
+    }
+
     const { id } = req.params;
-    const deletedColumn = await ColumnModel.findByIdAndDelete(id);
+    const deletedColumn = await ColumnModel.findOneAndDelete({
+      _id: id,
+      userId: req.user._id,
+    });
 
     if (!deletedColumn) {
       return res.status(404).json({ message: 'Column not found' });

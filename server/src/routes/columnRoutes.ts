@@ -5,9 +5,11 @@ import {
   updateColumn,
   deleteColumn,
 } from '../controllers/columnController.js';
+import { protect } from '../middleware/authMiddleware.js';
 
 const router = Router();
 
+router.use(protect);
 router.get('/', getColumns);
 router.post('/', createColumn);
 router.put('/:id', updateColumn);

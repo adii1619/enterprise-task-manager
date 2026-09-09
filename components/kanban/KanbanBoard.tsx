@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useBoardStore } from '@/lib/store';
+import { useAuthStore } from '@/lib/auth-store';
 import KanbanColumn from './KanbanColumn';
 import TaskCard from './TaskCard';
 import {
@@ -16,8 +17,10 @@ import {
 } from '@dnd-kit/core';
 
 export default function KanbanBoard() {
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const columns = useBoardStore((state) => state.columns);
   const tasks = useBoardStore((state) => state.tasks);
+  const clearBoard = useBoardStore((state) => state.clearBoard);
   const searchQuery = useBoardStore((state) => state.searchQuery);
   const selectedPriority = useBoardStore((state) => state.selectedPriority);
   const addColumn = useBoardStore((state) => state.addColumn);
@@ -28,8 +31,12 @@ export default function KanbanBoard() {
 
   // 2. Fetch live MongoDB data on page load
   useEffect(() => {
-    fetchBoardData();
-  }, [fetchBoardData]);
+    if (isAuthenticated) {
+      void fetchBoardData();
+    } else {
+      clearBoard();
+    }
+  }, [clearBoard, fetchBoardData, isAuthenticated]);
 
 
   const [isAddingColumn, setIsAddingColumn] = useState(false);
@@ -99,6 +106,22 @@ export default function KanbanBoard() {
     setColumnTitle('');
     setIsAddingColumn(false);
   };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex h-full items-center justify-center p-6">
+        <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
+            Engineering workspace
+          </p>
+          <h2 className="mt-2 text-2xl font-bold text-slate-900">Sign in to view your board</h2>
+          <p className="mt-2 text-sm text-slate-500">
+            Your tasks and columns are private to your account.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <DndContext

@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { Task, Column, Priority } from '@/types';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+import { apiFetch } from '@/lib/api';
 
 interface BoardState {
   columns: Column[];
@@ -16,6 +15,7 @@ interface BoardState {
   
   // Async Data Fetching
   fetchBoardData: () => Promise<void>;
+  clearBoard: () => void;
 
   // Task Actions
   addTask: (columnId: string, title: string, priority?: Priority) => Promise<void>;
@@ -46,28 +46,25 @@ export const useBoardStore = create<BoardState>((set, get) => ({
   // Load live data from MongoDB on app start
   fetchBoardData: async () => {
     try {
-      const [colsRes, tasksRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/columns`),
-        fetch(`${API_BASE_URL}/tasks`),
+      const [columns, tasks] = await Promise.all([
+        apiFetch<Column[]>('/columns'),
+        apiFetch<Task[]>('/tasks'),
       ]);
-      const columns = await colsRes.json();
-      const tasks = await tasksRes.json();
       set({ columns, tasks });
     } catch (err) {
       console.error('Failed to load board data:', err);
     }
   },
 
+  clearBoard: () => set({ columns: [], tasks: [] }),
+
   // Add task to Express API
   addTask: async (columnId, title, priority = 'MEDIUM') => {
     try {
-      const res = await fetch(`${API_BASE_URL}/tasks`, {
+      const newTask = await apiFetch<Task>('/tasks', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ columnId, title, priority }),
       });
-      if (!res.ok) throw new Error(`Failed to add task (${res.status})`);
-      const newTask = await res.json();
       set((state) => ({ tasks: [...state.tasks, newTask] }));
     } catch (err) {
       console.error('Failed to add task:', err);
@@ -85,12 +82,10 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     }));
 
     try {
-      const res = await fetch(`${API_BASE_URL}/tasks/${taskId}`, {
+      await apiFetch(`/tasks/${taskId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updates),
       });
-      if (!res.ok) throw new Error(`Failed to update task (${res.status})`);
     } catch (err) {
       console.error('Failed to update task:', err);
     }
@@ -109,9 +104,8 @@ export const useBoardStore = create<BoardState>((set, get) => ({
 
     // 2. Sync change with backend
     try {
-      await fetch(`${API_BASE_URL}/tasks/${taskId}`, {
+      await apiFetch(`/tasks/${taskId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ columnId: newColumnId }),
       });
     } catch (err) {
@@ -130,7 +124,7 @@ export const useBoardStore = create<BoardState>((set, get) => ({
 
     // 2. Delete from MongoDB
     try {
-      await fetch(`${API_BASE_URL}/tasks/${taskId}`, {
+      await apiFetch(`/tasks/${taskId}`, {
         method: 'DELETE',
       });
     } catch (err) {
@@ -142,13 +136,10 @@ export const useBoardStore = create<BoardState>((set, get) => ({
   addColumn: async (title) => {
     try {
       const order = get().columns.length + 1;
-      const res = await fetch(`${API_BASE_URL}/columns`, {
+      const newColumn = await apiFetch<Column>('/columns', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title, order }),
       });
-      if (!res.ok) throw new Error(`Failed to create column (${res.status})`);
-      const newColumn = await res.json();
       set((state) => ({ columns: [...state.columns, newColumn] }));
     } catch (err) {
       console.error('Failed to add column:', err);
@@ -158,12 +149,10 @@ export const useBoardStore = create<BoardState>((set, get) => ({
   // Update column title via API
   updateColumnTitle: async (id, title) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/columns/${id}`, {
+      await apiFetch(`/columns/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title }),
       });
-      if (!res.ok) throw new Error(`Failed to update column (${res.status})`);
       set((state) => ({
         columns: state.columns.map((column) =>
           column._id === id ? { ...column, title } : column
@@ -177,10 +166,9 @@ export const useBoardStore = create<BoardState>((set, get) => ({
   // Delete an empty column via API
   deleteColumn: async (id) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/columns/${id}`, {
+      await apiFetch(`/columns/${id}`, {
         method: 'DELETE',
       });
-      if (!res.ok) throw new Error(`Failed to delete column (${res.status})`);
       set((state) => ({
         columns: state.columns.filter((column) => column._id !== id),
         tasks: state.tasks.filter((task) => task.columnId !== id),
