@@ -24,7 +24,7 @@ export interface Task {
   title: string;
   description?: string;
   priority: Priority;
-  assigneeId?: string;
+  assigneeId?: string | TaskAssignee;
   createdAt: string;
   updatedAt: string;
 }
@@ -49,13 +49,20 @@ export interface Workspace {
   ownerId: string;
 }
 
+export interface TaskAssignee {
+  _id: string;
+  name: string;
+  email: string;
+  avatarUrl?: string;
+}
+
 export interface ClientWorkspace {
   _id: string;
   name: string;
   slug: string;
   ownerId: string;
   members: Array<{
-    userId: string;
+    userId: string | TaskAssignee;
     role: 'OWNER' | 'ADMIN' | 'MEMBER';
     joinedAt: string;
   }>;

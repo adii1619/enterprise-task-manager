@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { useBoardStore } from '@/lib/store';
-import { Priority, Task } from '@/types';
+import { Priority, Task, TaskAssignee } from '@/types';
+import { useWorkspaceStore } from '@/lib/workspace-store';
 
 interface TaskModalProps {
   task: Task;
@@ -11,10 +12,14 @@ interface TaskModalProps {
 
 export default function TaskModal({ task, onClose }: TaskModalProps) {
   const { updateTask, deleteTask } = useBoardStore();
+  const members = useWorkspaceStore((state) => state.currentWorkspace?.members || []);
 
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description || '');
   const [priority, setPriority] = useState<Priority>(task.priority);
+  const [assigneeId, setAssigneeId] = useState(
+    typeof task.assigneeId === 'string' ? task.assigneeId : task.assigneeId?._id || ''
+  );
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleSave = async (e: React.FormEvent) => {
@@ -25,6 +30,7 @@ export default function TaskModal({ task, onClose }: TaskModalProps) {
       title: title.trim(),
       description: description.trim(),
       priority,
+      assigneeId: assigneeId || undefined,
     });
     onClose();
   };
@@ -61,6 +67,17 @@ export default function TaskModal({ task, onClose }: TaskModalProps) {
               className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500"
               required
             />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs font-semibold text-slate-600">Assignee</label>
+            <select value={assigneeId} onChange={(e) => setAssigneeId(e.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500">
+              <option value="">Unassigned</option>
+              {members.map((member) => {
+                const profile = typeof member.userId === 'string' ? null : (member.userId as TaskAssignee);
+                return profile ? <option key={profile._id} value={profile._id}>{profile.name} ({member.role})</option> : null;
+              })}
+            </select>
           </div>
 
           <div>

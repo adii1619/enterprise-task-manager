@@ -14,7 +14,10 @@ export const getTasks = async (req: Request, res: Response) => {
       return;
     }
 
-    const tasks = await TaskModel.find({ workspaceId: req.workspace._id });
+    const tasks = await TaskModel.find({ workspaceId: req.workspace._id }).populate(
+      'assigneeId',
+      'name email avatarUrl'
+    );
     res.status(200).json(tasks);
   } catch (error) {
     res.status(500).json({ message: (error as Error).message });
@@ -34,6 +37,8 @@ export const createTask = async (req: Request, res: Response) => {
     }
 
     const { columnId, title, description, priority, assigneeId } = req.body;
+    const normalizedAssigneeId =
+      typeof assigneeId === 'object' && assigneeId ? assigneeId._id : assigneeId;
     const column = await ColumnModel.findOne({
       _id: columnId,
       workspaceId: req.workspace._id,
@@ -44,15 +49,29 @@ export const createTask = async (req: Request, res: Response) => {
       return;
     }
 
+    if (normalizedAssigneeId) {
+      const isMember = req.workspace.members.some(
+        (member) => member.userId.toString() === normalizedAssigneeId
+      );
+      if (!isMember) {
+        res.status(400).json({ message: 'Assignee must be a workspace member' });
+        return;
+      }
+    }
+
     const task = await TaskModel.create({
       workspaceId: req.workspace._id,
       columnId,
       title,
       description,
       priority,
-      assigneeId,
+      assigneeId: normalizedAssigneeId,
     });
-    res.status(201).json(task);
+    const populatedTask = await TaskModel.findById(task._id).populate(
+      'assigneeId',
+      'name email avatarUrl'
+    );
+    res.status(201).json(populatedTask);
   } catch (error) {
     res.status(400).json({ message: (error as Error).message });
   }
@@ -72,6 +91,8 @@ export const updateTask = async (req: Request, res: Response) => {
 
     const { id } = req.params;
     const { columnId, title, description, priority, assigneeId } = req.body;
+    const normalizedAssigneeId =
+      typeof assigneeId === 'object' && assigneeId ? assigneeId._id : assigneeId;
     if (columnId) {
       const column = await ColumnModel.findOne({
         _id: columnId,
@@ -84,9 +105,19 @@ export const updateTask = async (req: Request, res: Response) => {
       }
     }
 
+    if (normalizedAssigneeId) {
+      const isMember = req.workspace.members.some(
+        (member) => member.userId.toString() === normalizedAssigneeId
+      );
+      if (!isMember) {
+        res.status(400).json({ message: 'Assignee must be a workspace member' });
+        return;
+      }
+    }
+
     const updatedTask = await TaskModel.findOneAndUpdate(
       { _id: id, workspaceId: req.workspace._id },
-      { columnId, title, description, priority, assigneeId },
+      { columnId, title, description, priority, assigneeId: normalizedAssigneeId },
       {
       new: true,
       runValidators: true,
@@ -97,7 +128,11 @@ export const updateTask = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Task not found' });
     }
 
-    res.status(200).json(updatedTask);
+    const populatedTask = await TaskModel.findById(updatedTask._id).populate(
+      'assigneeId',
+      'name email avatarUrl'
+    );
+    res.status(200).json(populatedTask);
   } catch (error) {
     res.status(400).json({ message: (error as Error).message });
   }

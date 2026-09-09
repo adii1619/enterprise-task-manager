@@ -7,6 +7,7 @@ import { Priority } from '@/types';
 import AuthModal from '@/components/auth/AuthModal';
 import UserMenu from '@/components/auth/UserMenu';
 import { useAuthStore } from '@/lib/auth-store';
+import InviteMemberModal from '@/components/auth/InviteMemberModal';
 
 export default function Header() {
   const {
@@ -32,6 +33,7 @@ export default function Header() {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isCreatingWorkspace, setIsCreatingWorkspace] = useState(false);
   const [newWorkspaceName, setNewWorkspaceName] = useState('');
+  const [isInviteOpen, setIsInviteOpen] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated) void loadWorkspaces();
@@ -171,9 +173,21 @@ export default function Header() {
           </label>
 
           <UserMenu onSignIn={() => setIsAuthOpen(true)} />
+          {isAuthenticated && currentWorkspace && (
+            <button
+              type="button"
+              onClick={() => setIsInviteOpen(true)}
+              className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:border-blue-300 hover:text-blue-700"
+            >
+              Invite Member
+            </button>
+          )}
         </div>
       </div>
       {isAuthOpen && <AuthModal onClose={() => setIsAuthOpen(false)} />}
+      {isInviteOpen && currentWorkspace && (
+        <InviteMemberModal workspaceId={currentWorkspace._id} onClose={() => setIsInviteOpen(false)} />
+      )}
     </header>
   );
 }

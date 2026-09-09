@@ -119,3 +119,16 @@ export function createWorkspace(name: string) {
     body: JSON.stringify({ name }),
   });
 }
+
+export function inviteWorkspaceMember(
+  workspaceId: string,
+  data: { email: string; role: 'ADMIN' | 'MEMBER' }
+) {
+  return apiFetch<{ user: import('@/types').TaskAssignee; role: 'ADMIN' | 'MEMBER' }>(
+    `/workspaces/${workspaceId}/members`,
+    {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }
+  );
+}

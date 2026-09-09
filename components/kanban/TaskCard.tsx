@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Task } from '@/types';
+import { Task, TaskAssignee } from '@/types';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import TaskModal from './TaskModal';
@@ -33,6 +33,8 @@ export default function TaskCard({ task }: TaskCardProps) {
     transform: CSS.Transform.toString(transform),
     transition,
   };
+  const assignee = typeof task.assigneeId === 'string' ? null : (task.assigneeId as TaskAssignee | undefined);
+  const initials = assignee?.name.split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase();
 
   return (
     <>
@@ -62,6 +64,16 @@ export default function TaskCard({ task }: TaskCardProps) {
           <p className="mt-1 line-clamp-2 text-xs text-slate-500">
             {task.description}
           </p>
+        )}
+        {assignee && (
+          <div className="mt-3 flex items-center gap-2 text-[10px] font-medium text-slate-500">
+            {assignee.avatarUrl ? (
+              <span role="img" aria-label={`${assignee.name} avatar`} style={{ backgroundImage: `url(${assignee.avatarUrl})` }} className="h-6 w-6 rounded-full bg-cover bg-center" />
+            ) : (
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-[9px] font-bold text-blue-700">{initials}</span>
+            )}
+            <span className="truncate">{assignee.name}</span>
+          </div>
         )}
       </div>
 

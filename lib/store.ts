@@ -21,7 +21,7 @@ interface BoardState {
   addTask: (columnId: string, title: string, priority?: Priority) => Promise<void>;
   updateTask: (
     taskId: string,
-    updates: Partial<Pick<Task, 'title' | 'description' | 'priority'>>
+    updates: Partial<Pick<Task, 'title' | 'description' | 'priority' | 'assigneeId'>>
   ) => Promise<void>;
   updateTaskColumn: (taskId: string, newColumnId: string) => Promise<void>;
   deleteTask: (taskId: string) => Promise<void>;
