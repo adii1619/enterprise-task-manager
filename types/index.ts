@@ -1,5 +1,14 @@
 export type Priority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
 export type Role = 'ADMIN' | 'MANAGER' | 'MEMBER';
+export type AuthRole = 'ADMIN' | 'MEMBER';
+
+export interface AuthUser {
+  _id: string;
+  name: string;
+  email: string;
+  avatarUrl?: string;
+  role: AuthRole;
+}
 
 export interface User {
   id: string;

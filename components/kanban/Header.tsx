@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { useBoardStore } from '@/lib/store';
 import { Priority } from '@/types';
+import AuthModal from '@/components/auth/AuthModal';
+import UserMenu from '@/components/auth/UserMenu';
 
 const workspaces = ['Engineering Team', 'Product Team', 'Design Team'];
 
@@ -18,6 +20,7 @@ export default function Header() {
   const [workspace, setWorkspace] = useState('Engineering Team');
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [tempTitle, setTempTitle] = useState(boardTitle);
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
 
   const handleTitleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -116,8 +119,11 @@ export default function Header() {
               <option value="URGENT">Urgent</option>
             </select>
           </label>
+
+          <UserMenu onSignIn={() => setIsAuthOpen(true)} />
         </div>
       </div>
+      {isAuthOpen && <AuthModal onClose={() => setIsAuthOpen(false)} />}
     </header>
   );
 }

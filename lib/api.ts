@@ -1,4 +1,70 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const AUTH_STORAGE_KEY = 'enterprise-task-manager-auth';
+
+export class ApiError extends Error {
+  status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+  }
+}
+
+export function getStoredAuthToken(): string | null {
+  if (typeof window === 'undefined') return null;
+
+  try {
+    const stored = window.localStorage.getItem(AUTH_STORAGE_KEY);
+    if (!stored) return null;
+    return (JSON.parse(stored) as { state?: { token?: string | null } }).state?.token ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const token = getStoredAuthToken();
+  const headers = new Headers(init.headers);
+  headers.set('Content-Type', 'application/json');
+  if (token) headers.set('Authorization', `Bearer ${token}`);
+
+  const response = await fetch(`${API_BASE_URL}${path}`, { ...init, headers });
+  const body = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new ApiError(body?.message || 'Request failed', response.status);
+  }
+
+  return body as T;
+}
+
+export interface AuthResponse {
+  token: string;
+  user: import('@/types').AuthUser;
+}
+
+export function registerUser(data: {
+  name: string;
+  email: string;
+  password: string;
+}) {
+  return apiFetch<AuthResponse>('/auth/register', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export function loginUser(data: { email: string; password: string }) {
+  return apiFetch<AuthResponse>('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export function fetchCurrentUser() {
+  return apiFetch<{ user: import('@/types').AuthUser }>('/auth/me');
+}
 
 export async function fetchColumns() {
   const res = await fetch(`${API_BASE_URL}/columns`);

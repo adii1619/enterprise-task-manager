@@ -22,15 +22,15 @@ export const mockBoard: Board = {
 };
 
 export const mockColumns: Column[] = [
-  { id: 'col-1', boardId: 'brd-1', title: 'To Do', order: 0 },
-  { id: 'col-2', boardId: 'brd-1', title: 'In Progress', order: 1 },
-  { id: 'col-3', boardId: 'brd-1', title: 'In Review', order: 2 },
-  { id: 'col-4', boardId: 'brd-1', title: 'Done', order: 3 },
+  { _id: 'col-1', boardId: 'brd-1', title: 'To Do', order: 0 },
+  { _id: 'col-2', boardId: 'brd-1', title: 'In Progress', order: 1 },
+  { _id: 'col-3', boardId: 'brd-1', title: 'In Review', order: 2 },
+  { _id: 'col-4', boardId: 'brd-1', title: 'Done', order: 3 },
 ];
 
 export const mockTasks: Task[] = [
   {
-    id: 'task-1',
+    _id: 'task-1',
     columnId: 'col-1',
     title: 'Setup Next.js 14 App Router layout',
     description: 'Configure TypeScript, Tailwind CSS, and global styles.',
@@ -40,7 +40,7 @@ export const mockTasks: Task[] = [
     updatedAt: new Date().toISOString(),
   },
   {
-    id: 'task-2',
+    _id: 'task-2',
     columnId: 'col-1',
     title: 'Design Kanban UI wireframes',
     description: 'Sketch layout in Figma before component construction.',
@@ -50,7 +50,7 @@ export const mockTasks: Task[] = [
     updatedAt: new Date().toISOString(),
   },
   {
-    id: 'task-3',
+    _id: 'task-3',
     columnId: 'col-2',
     title: 'Implement Zustand local state store',
     description: 'Handle offline CRUD operations for columns and tasks.',
@@ -60,7 +60,7 @@ export const mockTasks: Task[] = [
     updatedAt: new Date().toISOString(),
   },
   {
-    id: 'task-4',
+    _id: 'task-4',
     columnId: 'col-4',
     title: 'Define TypeScript interfaces',
     description: 'Created core domain models in types/index.ts.',
