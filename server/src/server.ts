@@ -7,6 +7,7 @@ import taskRoutes from './routes/taskRoutes.js';
 import columnRoutes from "./routes/columnRoutes.js"
 import authRoutes from './routes/authRoutes.js';
 import workspaceRoutes from './routes/workspaceRoutes.js';
+import analyticsRoutes from './routes/analyticsRoutes.js';
 import { initializeSocketServer } from './socket.js';
 
 dotenv.config();
@@ -27,6 +28,7 @@ app.use('/api/tasks', taskRoutes);
 app.use('/api/columns', columnRoutes)
 app.use('/api/auth', authRoutes);
 app.use('/api/workspaces', workspaceRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // Health Check Route
 app.get('/health', (req: Request, res: Response) => {

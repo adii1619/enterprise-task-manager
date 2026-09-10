@@ -136,3 +136,7 @@ export function inviteWorkspaceMember(
 export function fetchWorkspaceActivity(workspaceId: string) {
   return apiFetch<import('@/types').ActivityItem[]>(`/workspaces/${workspaceId}/activity`);
 }
+
+export function fetchWorkspaceMetrics(workspaceId: string) {
+  return apiFetch<import('@/types').WorkspaceMetricsResponse>(`/analytics/${workspaceId}/metrics`);
+}

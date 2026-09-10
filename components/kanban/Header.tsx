@@ -9,6 +9,7 @@ import UserMenu from '@/components/auth/UserMenu';
 import { useAuthStore } from '@/lib/auth-store';
 import InviteMemberModal from '@/components/auth/InviteMemberModal';
 import ActivityDrawer from './ActivityDrawer';
+import AnalyticsModal from './AnalyticsModal';
 
 export default function Header() {
   const {
@@ -37,6 +38,7 @@ export default function Header() {
   const [newWorkspaceName, setNewWorkspaceName] = useState('');
   const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [isActivityOpen, setIsActivityOpen] = useState(false);
+  const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated) void loadWorkspaces();
@@ -185,6 +187,15 @@ export default function Header() {
               Activity
             </button>
           )}
+          {isAuthenticated && currentWorkspace && (
+            <button
+              type="button"
+              onClick={() => setIsAnalyticsOpen(true)}
+              className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:border-blue-300 hover:text-blue-700"
+            >
+              Analytics
+            </button>
+          )}
           {isAuthenticated && currentWorkspace && presence.length > 0 && (
             <div className="flex items-center gap-1" aria-label={`${presence.length} active workspace members`}>
               <div className="flex -space-x-2">
@@ -237,6 +248,9 @@ export default function Header() {
       )}
       {isActivityOpen && currentWorkspace && (
         <ActivityDrawer workspaceId={currentWorkspace._id} onClose={() => setIsActivityOpen(false)} />
+      )}
+      {isAnalyticsOpen && currentWorkspace && (
+        <AnalyticsModal workspaceId={currentWorkspace._id} onClose={() => setIsAnalyticsOpen(false)} />
       )}
     </header>
   );

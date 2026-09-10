@@ -106,3 +106,20 @@ export interface ActivityItem {
   details?: string;
   createdAt: string;
 }
+
+export interface WorkloadMetric {
+  _id: string;
+  name: string;
+  email: string;
+  taskCount: number;
+}
+
+export interface WorkspaceMetricsResponse {
+  summary: {
+    byStatus: Array<{ _id: string; count: number }>;
+    overdue: Array<{ overdueCount: number }>;
+    completed: Array<{ completedCount: number }>;
+    total: Array<{ totalCount: number }>;
+  };
+  workload: WorkloadMetric[];
+}
