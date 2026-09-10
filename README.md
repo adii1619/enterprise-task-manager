@@ -101,6 +101,20 @@ Open [http://localhost:3000](http://localhost:3000). The frontend uses `http://l
 NEXT_PUBLIC_API_URL=http://localhost:5000/api
 ```
 
+### Docker Compose
+
+With Docker Desktop running, start the frontend, API, Socket.io server, and MongoDB together:
+
+```bash
+docker compose up -d --build
+```
+
+Open [http://localhost:3000](http://localhost:3000). MongoDB data is persisted in the `mongo-data` volume. Configure deployment values with environment variables such as `JWT_SECRET`, `CLIENT_PORT`, `SERVER_PORT`, `NEXT_PUBLIC_API_URL`, and `NEXT_PUBLIC_SOCKET_URL` before starting Compose. Stop the stack with:
+
+```bash
+docker compose down
+```
+
 ## API Reference
 
 | Method | Endpoint | Purpose |
