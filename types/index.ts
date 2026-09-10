@@ -25,6 +25,9 @@ export interface Task {
   description?: string;
   priority: Priority;
   assigneeId?: string | TaskAssignee;
+  checklist?: ChecklistItem[];
+  dueDate?: string;
+  tags?: TaskTag[];
   createdAt: string;
   updatedAt: string;
 }
@@ -66,4 +69,15 @@ export interface ClientWorkspace {
     role: 'OWNER' | 'ADMIN' | 'MEMBER';
     joinedAt: string;
   }>;
+}
+
+export interface ChecklistItem {
+  _id: string;
+  title: string;
+  completed: boolean;
+}
+
+export interface TaskTag {
+  name: string;
+  color: string;
 }

@@ -1,6 +1,33 @@
 import { Request, Response } from 'express';
 import { ColumnModel } from '../models/Column.js';
-import { TaskModel } from '../models/Task.js';
+import { ITaskTag, TaskModel } from '../models/Task.js';
+
+const DEFAULT_TAG_COLOR = '#64748b';
+
+const normalizeTags = (tags: unknown): ITaskTag[] | undefined => {
+  if (!Array.isArray(tags)) {
+    return undefined;
+  }
+
+  return tags.map((tag) => {
+    if (typeof tag === 'string') {
+      return { name: tag.trim(), color: DEFAULT_TAG_COLOR };
+    }
+
+    if (tag && typeof tag === 'object') {
+      const tagObject = tag as { name?: unknown; color?: unknown };
+      return {
+        name: typeof tagObject.name === 'string' ? tagObject.name.trim() : String(tagObject.name ?? ''),
+        color:
+          typeof tagObject.color === 'string' && tagObject.color.trim()
+            ? tagObject.color.trim()
+            : DEFAULT_TAG_COLOR,
+      };
+    }
+
+    return { name: '', color: DEFAULT_TAG_COLOR };
+  });
+};
 
 // Get all tasks
 export const getTasks = async (req: Request, res: Response) => {
@@ -36,7 +63,7 @@ export const createTask = async (req: Request, res: Response) => {
       return;
     }
 
-    const { columnId, title, description, priority, assigneeId } = req.body;
+    const { columnId, title, description, priority, assigneeId, checklist, dueDate, tags } = req.body;
     const normalizedAssigneeId =
       typeof assigneeId === 'object' && assigneeId ? assigneeId._id : assigneeId;
     const column = await ColumnModel.findOne({
@@ -66,6 +93,9 @@ export const createTask = async (req: Request, res: Response) => {
       description,
       priority,
       assigneeId: normalizedAssigneeId,
+      checklist,
+      dueDate,
+      tags: normalizeTags(tags),
     });
     const populatedTask = await TaskModel.findById(task._id).populate(
       'assigneeId',
@@ -90,7 +120,7 @@ export const updateTask = async (req: Request, res: Response) => {
     }
 
     const { id } = req.params;
-    const { columnId, title, description, priority, assigneeId } = req.body;
+    const { columnId, title, description, priority, assigneeId, checklist, dueDate, tags } = req.body;
     const normalizedAssigneeId =
       typeof assigneeId === 'object' && assigneeId ? assigneeId._id : assigneeId;
     if (columnId) {
@@ -117,7 +147,16 @@ export const updateTask = async (req: Request, res: Response) => {
 
     const updatedTask = await TaskModel.findOneAndUpdate(
       { _id: id, workspaceId: req.workspace._id },
-      { columnId, title, description, priority, assigneeId: normalizedAssigneeId },
+      {
+        columnId,
+        title,
+        description,
+        priority,
+        assigneeId: normalizedAssigneeId,
+        checklist,
+        dueDate,
+        tags: normalizeTags(tags),
+      },
       {
       new: true,
       runValidators: true,
