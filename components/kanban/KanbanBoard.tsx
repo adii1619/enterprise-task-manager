@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useBoardStore } from '@/lib/store';
 import { useAuthStore } from '@/lib/auth-store';
 import { useWorkspaceStore } from '@/lib/workspace-store';
+import { useSocket } from '@/lib/useSocket';
 import KanbanColumn from './KanbanColumn';
 import TaskCard from './TaskCard';
 import {
@@ -20,6 +21,7 @@ import {
 export default function KanbanBoard() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
+  useSocket(currentWorkspace?._id);
   const columns = useBoardStore((state) => state.columns);
   const tasks = useBoardStore((state) => state.tasks);
   const clearBoard = useBoardStore((state) => state.clearBoard);

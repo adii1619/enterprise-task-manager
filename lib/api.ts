@@ -132,3 +132,7 @@ export function inviteWorkspaceMember(
     }
   );
 }
+
+export function fetchWorkspaceActivity(workspaceId: string) {
+  return apiFetch<import('@/types').ActivityItem[]>(`/workspaces/${workspaceId}/activity`);
+}

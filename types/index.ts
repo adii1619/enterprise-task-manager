@@ -81,3 +81,28 @@ export interface TaskTag {
   name: string;
   color: string;
 }
+
+export interface PresenceUser {
+  _id: string;
+  name: string;
+  email: string;
+  avatarUrl?: string;
+}
+
+export type BoardRealtimeEvent =
+  | { type: 'task:created' | 'task:updated' | 'task:moved'; task: Task }
+  | { type: 'task:deleted'; id: string }
+  | { type: 'column:created' | 'column:updated'; column: Column }
+  | { type: 'column:deleted'; id: string };
+
+export interface ActivityItem {
+  _id: string;
+  workspaceId: string;
+  actorId: TaskAssignee;
+  actionType: string;
+  entityType: 'TASK' | 'COLUMN' | 'WORKSPACE' | 'MEMBER';
+  entityId?: string;
+  entityTitle?: string;
+  details?: string;
+  createdAt: string;
+}

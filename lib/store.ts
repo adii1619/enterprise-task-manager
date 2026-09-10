@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Task, Column, Priority } from '@/types';
+import { BoardRealtimeEvent, Task, Column, Priority } from '@/types';
 import { apiFetch } from '@/lib/api';
 
 interface BoardState {
@@ -16,6 +16,7 @@ interface BoardState {
   // Async Data Fetching
   fetchBoardData: () => Promise<void>;
   clearBoard: () => void;
+  applyRealtimeEvent: (event: BoardRealtimeEvent) => void;
 
   // Task Actions
   addTask: (columnId: string, title: string, priority?: Priority) => Promise<void>;
@@ -59,6 +60,49 @@ export const useBoardStore = create<BoardState>((set, get) => ({
   },
 
   clearBoard: () => set({ columns: [], tasks: [] }),
+
+  applyRealtimeEvent: (event) => {
+    set((state) => {
+      if (event.type === 'task:created') {
+        const exists = state.tasks.some((task) => task._id === event.task._id);
+        return exists
+          ? { tasks: state.tasks.map((task) => task._id === event.task._id ? event.task : task) }
+          : { tasks: [...state.tasks, event.task] };
+      }
+
+      if (event.type === 'task:updated' || event.type === 'task:moved') {
+        return {
+          tasks: state.tasks.map((task) => task._id === event.task._id ? event.task : task),
+        };
+      }
+
+      if (event.type === 'task:deleted') {
+        return { tasks: state.tasks.filter((task) => task._id !== event.id) };
+      }
+
+      if (event.type === 'column:created') {
+        const exists = state.columns.some((column) => column._id === event.column._id);
+        return exists
+          ? { columns: state.columns.map((column) => column._id === event.column._id ? event.column : column) }
+          : { columns: [...state.columns, event.column] };
+      }
+
+      if (event.type === 'column:updated') {
+        return {
+          columns: state.columns.map((column) => column._id === event.column._id ? event.column : column),
+        };
+      }
+
+      if (event.type === 'column:deleted') {
+        return {
+          columns: state.columns.filter((column) => column._id !== event.id),
+          tasks: state.tasks.filter((task) => task.columnId !== event.id),
+        };
+      }
+
+      return state;
+    });
+  },
 
   // Add task to Express API
   addTask: async (columnId, title, priority = 'MEDIUM') => {

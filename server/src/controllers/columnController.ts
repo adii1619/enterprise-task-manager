@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 import { ColumnModel } from '../models/Column.js';
+import { emitWorkspaceEvent } from '../socket.js';
+import { recordActivity } from '../utils/activityLogger.js';
 
 // Get all columns ordered by rank
 export const getColumns = async (req: Request, res: Response) => {
@@ -40,6 +42,15 @@ export const createColumn = async (req: Request, res: Response) => {
       order,
       boardId,
     });
+    emitWorkspaceEvent(req.workspace._id.toString(), 'column:created', column);
+    await recordActivity({
+      workspaceId: req.workspace._id,
+      actorId: req.user._id,
+      actionType: 'COLUMN_CREATED',
+      entityType: 'COLUMN',
+      entityId: column._id,
+      entityTitle: column.title,
+    });
     res.status(201).json(column);
   } catch (error) {
     res.status(400).json({ message: (error as Error).message });
@@ -70,6 +81,15 @@ export const updateColumn = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Column not found' });
     }
 
+    emitWorkspaceEvent(req.workspace._id.toString(), 'column:updated', updatedColumn);
+    await recordActivity({
+      workspaceId: req.workspace._id,
+      actorId: req.user._id,
+      actionType: 'COLUMN_UPDATED',
+      entityType: 'COLUMN',
+      entityId: updatedColumn._id,
+      entityTitle: updatedColumn.title,
+    });
     res.status(200).json(updatedColumn);
   } catch (error) {
     res.status(400).json({ message: (error as Error).message });
@@ -98,6 +118,15 @@ export const deleteColumn = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Column not found' });
     }
 
+    emitWorkspaceEvent(req.workspace._id.toString(), 'column:deleted', { id });
+    await recordActivity({
+      workspaceId: req.workspace._id,
+      actorId: req.user._id,
+      actionType: 'COLUMN_DELETED',
+      entityType: 'COLUMN',
+      entityId: deletedColumn._id,
+      entityTitle: deletedColumn.title,
+    });
     res.status(200).json({ message: 'Column deleted successfully', id });
   } catch (error) {
     res.status(500).json({ message: (error as Error).message });

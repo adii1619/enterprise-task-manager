@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import { ColumnModel } from '../models/Column.js';
 import { ITaskTag, TaskModel } from '../models/Task.js';
+import { emitWorkspaceEvent } from '../socket.js';
+import { recordActivity } from '../utils/activityLogger.js';
 
 const DEFAULT_TAG_COLOR = '#64748b';
 
@@ -101,6 +103,15 @@ export const createTask = async (req: Request, res: Response) => {
       'assigneeId',
       'name email avatarUrl'
     );
+    emitWorkspaceEvent(req.workspace._id.toString(), 'task:created', populatedTask);
+    await recordActivity({
+      workspaceId: req.workspace._id,
+      actorId: req.user._id,
+      actionType: 'TASK_CREATED',
+      entityType: 'TASK',
+      entityId: task._id,
+      entityTitle: task.title,
+    });
     res.status(201).json(populatedTask);
   } catch (error) {
     res.status(400).json({ message: (error as Error).message });
@@ -145,6 +156,10 @@ export const updateTask = async (req: Request, res: Response) => {
       }
     }
 
+    const existingTask = columnId
+      ? await TaskModel.findOne({ _id: id, workspaceId: req.workspace._id }).select('columnId')
+      : null;
+
     const updatedTask = await TaskModel.findOneAndUpdate(
       { _id: id, workspaceId: req.workspace._id },
       {
@@ -171,6 +186,27 @@ export const updateTask = async (req: Request, res: Response) => {
       'assigneeId',
       'name email avatarUrl'
     );
+    const workspaceId = req.workspace._id.toString();
+    emitWorkspaceEvent(workspaceId, 'task:updated', populatedTask);
+    if (existingTask && columnId && existingTask.columnId.toString() !== columnId) {
+      emitWorkspaceEvent(workspaceId, 'task:moved', populatedTask);
+      await recordActivity({
+        workspaceId: req.workspace._id,
+        actorId: req.user._id,
+        actionType: 'TASK_MOVED',
+        entityType: 'TASK',
+        entityId: updatedTask._id,
+        entityTitle: updatedTask.title,
+      });
+    }
+    await recordActivity({
+      workspaceId: req.workspace._id,
+      actorId: req.user._id,
+      actionType: 'TASK_UPDATED',
+      entityType: 'TASK',
+      entityId: updatedTask._id,
+      entityTitle: updatedTask.title,
+    });
     res.status(200).json(populatedTask);
   } catch (error) {
     res.status(400).json({ message: (error as Error).message });
@@ -199,6 +235,15 @@ export const deleteTask = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Task not found' });
     }
 
+    emitWorkspaceEvent(req.workspace._id.toString(), 'task:deleted', { id });
+    await recordActivity({
+      workspaceId: req.workspace._id,
+      actorId: req.user._id,
+      actionType: 'TASK_DELETED',
+      entityType: 'TASK',
+      entityId: deletedTask._id,
+      entityTitle: deletedTask.title,
+    });
     res.status(200).json({ message: 'Task deleted successfully', id });
   } catch (error) {
     res.status(500).json({ message: (error as Error).message });

@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import Workspace from '../models/Workspace.js';
 import User from '../models/User.js';
+import { ActivityLogModel } from '../models/ActivityLog.js';
+import { recordActivity } from '../utils/activityLogger.js';
 
 const createSlug = (name: string) =>
   name
@@ -34,6 +36,15 @@ export const createWorkspace = async (req: Request, res: Response): Promise<void
       slug,
       ownerId: req.user._id,
       members: [{ userId: req.user._id, role: 'OWNER' }],
+    });
+
+    await recordActivity({
+      workspaceId: workspace._id,
+      actorId: req.user._id,
+      actionType: 'WORKSPACE_CREATED',
+      entityType: 'WORKSPACE',
+      entityId: workspace._id,
+      entityTitle: workspace.name,
     });
 
     res.status(201).json(await workspace.populate('members.userId', 'name email avatarUrl'));
@@ -128,6 +139,16 @@ export const addWorkspaceMember = async (req: Request, res: Response): Promise<v
     req.workspace.members.push({ userId: user._id, role, joinedAt: new Date() });
     await req.workspace.save();
 
+    await recordActivity({
+      workspaceId: req.workspace._id,
+      actorId: req.user._id,
+      actionType: 'MEMBER_INVITED',
+      entityType: 'MEMBER',
+      entityId: user._id,
+      entityTitle: user.name,
+      details: `${user.email} invited as ${role}`,
+    });
+
     res.status(201).json({
       user: {
         _id: user._id,
@@ -137,6 +158,28 @@ export const addWorkspaceMember = async (req: Request, res: Response): Promise<v
       },
       role,
     });
+  } catch (error) {
+    res.status(500).json({ message: (error as Error).message });
+  }
+};
+
+export const getWorkspaceActivity = async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (!req.user || !req.workspace) {
+      res.status(401).json({ message: 'Not authenticated' });
+      return;
+    }
+
+    const requestedLimit = Number(req.query.limit);
+    const limit = Number.isFinite(requestedLimit)
+      ? Math.min(Math.max(Math.trunc(requestedLimit), 1), 100)
+      : 50;
+    const activities = await ActivityLogModel.find({ workspaceId: req.workspace._id })
+      .populate('actorId', 'name email avatarUrl')
+      .sort({ createdAt: -1 })
+      .limit(limit);
+
+    res.status(200).json(activities);
   } catch (error) {
     res.status(500).json({ message: (error as Error).message });
   }

@@ -1,17 +1,20 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { createWorkspace, fetchWorkspaces } from '@/lib/api';
-import { ClientWorkspace } from '@/types';
+import { ClientWorkspace, PresenceUser } from '@/types';
 
 interface WorkspaceState {
   workspaces: ClientWorkspace[];
   currentWorkspace: ClientWorkspace | null;
   isLoading: boolean;
   error: string | null;
+  presence: PresenceUser[];
   loadWorkspaces: () => Promise<void>;
   selectWorkspace: (workspaceId: string) => void;
   createWorkspace: (name: string) => Promise<void>;
   clearWorkspaces: () => void;
+  setPresence: (presence: PresenceUser[]) => void;
+  clearPresence: () => void;
 }
 
 export const useWorkspaceStore = create<WorkspaceState>()(
@@ -21,6 +24,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       currentWorkspace: null,
       isLoading: false,
       error: null,
+      presence: [],
 
       loadWorkspaces: async () => {
         set({ isLoading: true, error: null });
@@ -56,6 +60,8 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       },
 
       clearWorkspaces: () => set({ workspaces: [], currentWorkspace: null, error: null }),
+      setPresence: (presence) => set({ presence }),
+      clearPresence: () => set({ presence: [] }),
     }),
     {
       name: 'enterprise-task-manager-workspace',

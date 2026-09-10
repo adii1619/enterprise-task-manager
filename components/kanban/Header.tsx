@@ -8,6 +8,7 @@ import AuthModal from '@/components/auth/AuthModal';
 import UserMenu from '@/components/auth/UserMenu';
 import { useAuthStore } from '@/lib/auth-store';
 import InviteMemberModal from '@/components/auth/InviteMemberModal';
+import ActivityDrawer from './ActivityDrawer';
 
 export default function Header() {
   const {
@@ -21,6 +22,7 @@ export default function Header() {
   const {
     workspaces,
     currentWorkspace,
+    presence,
     isLoading: isWorkspaceLoading,
     loadWorkspaces,
     selectWorkspace,
@@ -34,6 +36,7 @@ export default function Header() {
   const [isCreatingWorkspace, setIsCreatingWorkspace] = useState(false);
   const [newWorkspaceName, setNewWorkspaceName] = useState('');
   const [isInviteOpen, setIsInviteOpen] = useState(false);
+  const [isActivityOpen, setIsActivityOpen] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated) void loadWorkspaces();
@@ -176,6 +179,50 @@ export default function Header() {
           {isAuthenticated && currentWorkspace && (
             <button
               type="button"
+              onClick={() => setIsActivityOpen(true)}
+              className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:border-blue-300 hover:text-blue-700"
+            >
+              Activity
+            </button>
+          )}
+          {isAuthenticated && currentWorkspace && presence.length > 0 && (
+            <div className="flex items-center gap-1" aria-label={`${presence.length} active workspace members`}>
+              <div className="flex -space-x-2">
+                {presence.slice(0, 5).map((member) => {
+                  const initials = member.name
+                    .split(' ')
+                    .map((part) => part[0])
+                    .join('')
+                    .slice(0, 2)
+                    .toUpperCase();
+                  return member.avatarUrl ? (
+                    <span
+                      key={member._id}
+                      role="img"
+                      aria-label={`${member.name} active`}
+                      title={member.name}
+                      className="h-7 w-7 rounded-full border-2 border-white bg-cover bg-center"
+                      style={{ backgroundImage: `url(${member.avatarUrl})` }}
+                    />
+                  ) : (
+                    <span
+                      key={member._id}
+                      title={member.name}
+                      className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-blue-100 text-[9px] font-bold text-blue-700"
+                    >
+                      {initials}
+                    </span>
+                  );
+                })}
+              </div>
+              {presence.length > 5 && (
+                <span className="text-[10px] font-semibold text-slate-500">+{presence.length - 5}</span>
+              )}
+            </div>
+          )}
+          {isAuthenticated && currentWorkspace && (
+            <button
+              type="button"
               onClick={() => setIsInviteOpen(true)}
               className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:border-blue-300 hover:text-blue-700"
             >
@@ -187,6 +234,9 @@ export default function Header() {
       {isAuthOpen && <AuthModal onClose={() => setIsAuthOpen(false)} />}
       {isInviteOpen && currentWorkspace && (
         <InviteMemberModal workspaceId={currentWorkspace._id} onClose={() => setIsInviteOpen(false)} />
+      )}
+      {isActivityOpen && currentWorkspace && (
+        <ActivityDrawer workspaceId={currentWorkspace._id} onClose={() => setIsActivityOpen(false)} />
       )}
     </header>
   );
